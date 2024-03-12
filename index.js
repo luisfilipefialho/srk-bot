@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const { token } = require('./config.json')
+const { token, visitorRoleId, verifiedRoleId, memberJoinedChannelId, verifyLogChannelId } = require('./config.json')
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 
@@ -25,22 +25,29 @@ client.once(Events.ClientReady, c => {
   console.log(`Bot Loaded as ${c.user.tag}`);
 })
 
+// Send log when guild member is added
 client.on(Events.GuildMemberAdd, member => {
   try {
-    const logChannel = member.guild.channels.cache.get('1174022033659666492');
-    const role = member.guild.roles.cache.get('1174013506413150248')
-    
+    // Get log channel
+    const logChannel = member.guild.channels.cache.get(memberJoinedChannelId);
+
+    // Get visitor role
+    const role = member.guild.roles.cache.get(visitorRoleId)
+ 
     if (role) {
+      // Add visitor role
       member?.roles.add(role)
     } else throw new Error('Role not exists')
   
+    // Embed message build
     const embed = new EmbedBuilder()
       .addFields(
         { name: '**Member Joined**', value: `<@${member?.user.id}>`}, 
       )
       .setTimestamp()
       .setColor('#0cad00');
-
+      
+      // Send message
       logChannel.send({ embeds: [embed] })
   } catch(err) {
     console.log(err);
@@ -72,9 +79,9 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.customId === "verify") {
       try {
         const member = await interaction.guild.members.fetch(interaction.user.id);
-        const logChannel = await interaction.guild.channels.fetch('1174067489429262526');
-        const role = await interaction.guild.roles.fetch('1174010299448315904');
-        const roleRem = await interaction.guild.roles.fetch('1174013506413150248');
+        const logChannel = await interaction.guild.channels.fetch(verifyLogChannelId);
+        const role = await interaction.guild.roles.fetch(verifiedRoleId);
+        const roleRem = await interaction.guild.roles.fetch(visitorRoleId);
 
         if (role) {
           await member?.roles.add(role);
